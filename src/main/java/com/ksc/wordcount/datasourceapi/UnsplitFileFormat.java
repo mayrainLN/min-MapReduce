@@ -27,7 +27,7 @@ public class UnsplitFileFormat implements FileFormat {
                 partiongFileList.add(new PartionFile(partionId, fileSplits));
                 partionId++;
             }
-            //todo 学生实现 driver端切分split的逻辑
+            //todo copy一个文件只切一个split 学生实现 driver端切分split的逻辑
 
             return partiongFileList.toArray(new PartionFile[partiongFileList.size()]);
         }

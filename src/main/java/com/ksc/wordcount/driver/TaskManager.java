@@ -50,8 +50,22 @@ public class TaskManager {
 
 
     public StageStatusEnum getStageTaskStatus(int stageId){
-        //todo 学生实现 获取指定stage的执行状态，如果该stage下的所有task均执行成功，返回FINISHED
-
+        //todo copy 学生实现 获取指定stage的执行状态，如果该stage下的所有task均执行成功，返回FINISHED
+        for (int taskId: stageMap.get(stageId)){
+            TaskStatus taskStatus = taskStatusMap.get(taskId);
+            if(taskStatus==null){
+                return StageStatusEnum.RUNNING;
+            }
+            if (taskStatus.getTaskStatus().equals(TaskStatusEnum.FAILED)){
+                return StageStatusEnum.FAILED;
+            }
+            if (taskStatus.getTaskStatus().equals(TaskStatusEnum.RUNNING)){
+                return StageStatusEnum.RUNNING;
+            }
+            if(taskStatus.getTaskStatus().equals(TaskStatusEnum.FINISHED)){
+                continue;
+            }
+        }
         return StageStatusEnum.FINISHED;
     }
 

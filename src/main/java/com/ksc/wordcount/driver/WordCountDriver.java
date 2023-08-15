@@ -3,10 +3,7 @@ package com.ksc.wordcount.driver;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import com.ksc.wordcount.datasourceapi.FileFormat;
-import com.ksc.wordcount.datasourceapi.PartionFile;
-import com.ksc.wordcount.datasourceapi.PartionWriter;
-import com.ksc.wordcount.datasourceapi.UnsplitFileFormat;
+import com.ksc.wordcount.datasourceapi.*;
 import com.ksc.wordcount.rpc.Driver.DriverActor;
 import com.ksc.wordcount.rpc.Driver.DriverSystem;
 import com.ksc.wordcount.shuffle.ShuffleBlockId;
@@ -16,8 +13,12 @@ import com.ksc.wordcount.task.map.MapTaskContext;
 import com.ksc.wordcount.task.reduce.ReduceFunction;
 import com.ksc.wordcount.task.reduce.ReduceTaskContext;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class WordCountDriver {
@@ -25,8 +26,10 @@ public class WordCountDriver {
     public static void main(String[] args) {
         DriverEnv.host= "127.0.0.1";
         DriverEnv.port = 4040;
-        String inputPath = "/tmp/input";
-        String outputPath = "/tmp/output";
+//        String inputPath = "/tmp/input";
+        String inputPath = "E:/MapReduce/input";
+//        String outputPath = "/tmp/output";
+        String outputPath = "E:/MapReduce/output";
         String applicationId = "wordcount_001";
         int reduceTaskNum = 2;
 
@@ -45,12 +48,28 @@ public class WordCountDriver {
         taskScheduler.registerBlockingQueue(mapStageId, new LinkedBlockingQueue());
         for (PartionFile partionFile : partionFiles) {
             MapFunction wordCountMapFunction = new MapFunction<String, KeyValue>() {
-
+                //todo copy 学生实现 定义maptask处理数据的规则
                 @Override
                 public Stream<KeyValue> map(Stream<String> stream) {
-                    //todo 学生实现 定义maptask处理数据的规则
-                    return null;
-                }
+                    return stream.flatMap(line->
+                                Stream.of(line.split("\\s+"))
+                            )
+                            .map(word->new KeyValue(word,1));
+
+//                    stream.flatMap(line -> {
+//                                        // Create a regex pattern to match URLs
+//                                        String regex = "(?<=^|\\s|\")https?://(?:[^\"\\s]+)(?=\\s|\")";
+//                                        Pattern pattern = Pattern.compile(regex);
+//                                        // 已修正 只读取url
+//                                        Matcher matcher = pattern.matcher(line);
+//                                        if (matcher.find()) {
+//                                            return matcher.group(1);
+//                                        }
+//                                        return null;
+//                                    }
+//                            )
+//                            .map(word -> new KeyValue(word, 1));
+                };
             };
             MapTaskContext mapTaskContext = new MapTaskContext(applicationId, "stage_"+mapStageId, taskScheduler.generateTaskId(), partionFile.getPartionId(), partionFile,
                     fileFormat.createReader(), reduceTaskNum, wordCountMapFunction);
@@ -71,7 +90,17 @@ public class WordCountDriver {
                 @Override
                 public Stream<KeyValue<String, Integer>> reduce(Stream<KeyValue<String, Integer>> stream) {
                     HashMap<String, Integer> map = new HashMap<>();
-                    //todo 学生实现 定义reducetask处理数据的规则
+
+                    //todo copy 学生实现 定义reducetask处理数据的规则 也就是Reduce的处理逻辑
+                    stream.forEach(e->{
+                        String key = e.getKey();
+                        Integer value = e.getValue();
+                        if(map.containsKey(key)) {
+                            map.put(key, map.get(key) + value);
+                        }else{
+                            map.put(key, value);
+                        }
+                    });
 
                     return map.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue()));
                 }
@@ -84,7 +113,5 @@ public class WordCountDriver {
         DriverEnv.taskScheduler.submitTask(reduceStageId);
         DriverEnv.taskScheduler.waitStageFinish(reduceStageId);
         System.out.println("job finished");
-
-
     }
 }

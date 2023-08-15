@@ -22,5 +22,5 @@ struct UrlTopNResult {
 service UrlTopNService {
     UrlTopNAppResponse submitApp(1: UrlTopNAppRequest urlTopNAppRequest),
     UrlTopNAppResponse getAppStatus(1: string applicationId),
-    list<UrlTopNResult> getTopNAppResult(1: string applicationId, 2: i32 topN)
+    list<UrlTopNResult> getTopNAppResult(1: string applicationId)
 }

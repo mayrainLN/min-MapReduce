@@ -28,7 +28,18 @@ public class TaskScheduler {
         BlockingQueue<TaskContext> taskQueue = taskManager.getBlockingQueue(stageId);
 
         while (!taskQueue.isEmpty()) {
-            //todo 学生实现 轮询给各个executor派发任务
+            //todo copy 学生实现 轮询给各个executor派发任务
+            executorManager.getExecutorAvailableCoresMap().forEach((executorUrl, availableCores) -> {
+                if (availableCores > 0 && !taskQueue.isEmpty()) {
+                    TaskContext taskContext = taskQueue.poll();
+                    if (taskContext != null) {
+                        taskExecuotrMap.put(taskContext.getTaskId(), executorUrl);
+                        executorManager.updateExecutorAvailableCores(executorUrl, -1);
+                        DriverRpc.submit(executorUrl, taskContext);
+                    }
+                }
+            });
+
 
             try {
                 String executorAvailableCoresMapStr=executorManager.getExecutorAvailableCoresMap().toString();
