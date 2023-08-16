@@ -42,7 +42,7 @@ public class DirectShuffleWriter implements ShuffleWriter<KeyValue> {
         Iterator<KeyValue> iterator = entryStream.iterator();
         while (iterator.hasNext()) {
             KeyValue next = iterator.next();
-            fileWriters[next.getKey().hashCode() % reduceTaskNum].writeObject(next);
+            fileWriters[Math.abs(next.getKey().hashCode()) % reduceTaskNum].writeObject(next);
         }
     }
 

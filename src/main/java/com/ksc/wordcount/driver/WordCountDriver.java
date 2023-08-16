@@ -15,7 +15,7 @@ import com.ksc.wordcount.task.reduce.ReduceTaskContext;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 public class WordCountDriver {
 
     public static void main(String[] args) {
-        DriverEnv.host= "127.0.0.1";
+        DriverEnv.host = "127.0.0.1";
         DriverEnv.port = 4040;
 //        String inputPath = "/tmp/input";
         String inputPath = "E:/MapReduce/input";
@@ -34,7 +34,7 @@ public class WordCountDriver {
         int reduceTaskNum = 2;
 
         FileFormat fileFormat = new UnsplitFileFormat();
-        PartionFile[]  partionFiles = fileFormat.getSplits(inputPath, 1000);
+        PartionFile[] partionFiles = fileFormat.getSplits(inputPath, 1000);
         for (FileSplit fileSplit : partionFiles[0].getFileSplits()) {
             System.out.println("fileSplit");
             System.out.println(fileSplit);
@@ -47,37 +47,39 @@ public class WordCountDriver {
         System.out.println("ServerActor started at: " + driverActorRef.path().toString());
 
 
-        int mapStageId = 0 ;
+        int mapStageId = 0;
         //添加stageId和任务的映射
         taskScheduler.registerBlockingQueue(mapStageId, new LinkedBlockingQueue());
         for (PartionFile partionFile : partionFiles) {
+            System.out.println("处理一次分片");
             MapFunction wordCountMapFunction = new MapFunction<String, KeyValue>() {
                 //todo copy 学生实现 定义maptask处理数据的规则
                 @Override
                 public Stream<KeyValue> map(Stream<String> stream) {
-                    return stream.flatMap(line->
-                                Stream.of(line.split("\\s+"))
-                            )
-                            .map(word->new KeyValue(word,1));
-
-//                    stream.flatMap(line -> {
-//                                        // Create a regex pattern to match URLs
-//                                        String regex = "(?<=^|\\s|\")https?://(?:[^\"\\s]+)(?=\\s|\")";
-//                                        Pattern pattern = Pattern.compile(regex);
-//                                        // 已修正 只读取url
-//                                        Matcher matcher = pattern.matcher(line);
-//                                        if (matcher.find()) {
-//                                            return matcher.group(1);
-//                                        }
-//                                        return null;
-//                                    }
-//                            )
-//                            .map(word -> new KeyValue(word, 1));
-                };
+                    System.out.println("处理一次map");
+                    String regex = "http://[^\\s\"\\n]*";
+                    Pattern pattern = Pattern.compile(regex);
+                    return stream.flatMap(line -> {
+                                System.out.println("line");
+                                System.out.println(line);
+                                // 已修正 只读取url
+                                Matcher matcher = pattern.matcher(line);
+                                List<String> matchedStrings = new ArrayList<>();
+                                while (matcher.find()) {
+                                    String group = matcher.group();
+                                    System.out.println(group);
+                                    matchedStrings.add(group);
+                                }
+                        System.out.println("---------------------------------------");
+                                return matchedStrings.stream()
+                                        .map(url->new KeyValue(url,1));
+                            }
+                    );
+                }
             };
-            MapTaskContext mapTaskContext = new MapTaskContext(applicationId, "stage_"+mapStageId, taskScheduler.generateTaskId(), partionFile.getPartionId(), partionFile,
+            MapTaskContext mapTaskContext = new MapTaskContext(applicationId, "stage_" + mapStageId, taskScheduler.generateTaskId(), partionFile.getPartionId(), partionFile,
                     fileFormat.createReader(), reduceTaskNum, wordCountMapFunction);
-            taskScheduler.addTaskContext(mapStageId,mapTaskContext);
+            taskScheduler.addTaskContext(mapStageId, mapTaskContext);
         }
 
         //提交stageId
@@ -85,9 +87,9 @@ public class WordCountDriver {
         DriverEnv.taskScheduler.waitStageFinish(mapStageId);
 
 
-        int reduceStageId = 1 ;
+        int reduceStageId = 1;
         taskScheduler.registerBlockingQueue(reduceStageId, new LinkedBlockingQueue());
-        for(int i = 0; i < reduceTaskNum; i++){
+        for (int i = 0; i < reduceTaskNum; i++) {
             ShuffleBlockId[] stageShuffleIds = taskScheduler.getStageShuffleIdByReduceId(mapStageId, i);
             ReduceFunction<String, Integer, String, Integer> reduceFunction = new ReduceFunction<String, Integer, String, Integer>() {
 
@@ -96,12 +98,12 @@ public class WordCountDriver {
                     HashMap<String, Integer> map = new HashMap<>();
 
                     //todo copy 学生实现 定义reducetask处理数据的规则 也就是Reduce的处理逻辑
-                    stream.forEach(e->{
+                    stream.forEach(e -> {
                         String key = e.getKey();
                         Integer value = e.getValue();
-                        if(map.containsKey(key)) {
+                        if (map.containsKey(key)) {
                             map.put(key, map.get(key) + value);
-                        }else{
+                        } else {
                             map.put(key, value);
                         }
                     });
