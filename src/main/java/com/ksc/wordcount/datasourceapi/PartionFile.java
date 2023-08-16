@@ -19,4 +19,12 @@ public class PartionFile implements Serializable {
         return fileSplits;
     }
 
+    @Override
+    public String toString() {
+        return "PartionFile{" +
+                "partionId=" + partionId +
+                ", fileSplits=" + fileSplits +
+                '}';
+    }
+
 }

@@ -35,6 +35,10 @@ public class WordCountDriver {
 
         FileFormat fileFormat = new UnsplitFileFormat();
         PartionFile[]  partionFiles = fileFormat.getSplits(inputPath, 1000);
+        for (FileSplit fileSplit : partionFiles[0].getFileSplits()) {
+            System.out.println("fileSplit");
+            System.out.println(fileSplit);
+        }
 
         TaskManager taskScheduler = DriverEnv.taskManager;
 

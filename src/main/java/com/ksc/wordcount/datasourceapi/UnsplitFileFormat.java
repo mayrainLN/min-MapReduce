@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-
 public class UnsplitFileFormat implements FileFormat {
 
     @Override
@@ -79,8 +78,14 @@ public class UnsplitFileFormat implements FileFormat {
                     sb.append(line);
                 }
             }
+            if(sb.length() > 0){
+                int SplitLength = sb.toString().getBytes("utf-8").length;
+                // 新建分片
+                fileSplitList.add(new FileSplit(file.getAbsolutePath(), currStart, SplitLength));
+            }
         } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("文件读取失败");
         }
         return fileSplitList.toArray(new FileSplit[fileSplitList.size()]);
     }

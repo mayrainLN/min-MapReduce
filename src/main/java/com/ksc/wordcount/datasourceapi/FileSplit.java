@@ -24,4 +24,13 @@ public class FileSplit implements Serializable {
     public long getLength() {
         return length;
     }
+
+    @Override
+    public String toString() {
+        return "FileSplit{" +
+                "fileName='" + fileName + '\'' +
+                ", start=" + start +
+                ", length=" + length +
+                '}';
+    }
 }
