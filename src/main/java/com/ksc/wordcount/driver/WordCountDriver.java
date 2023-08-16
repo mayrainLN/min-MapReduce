@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class WordCountDriver {
@@ -97,7 +98,7 @@ public class WordCountDriver {
                 public Stream<KeyValue<String, Integer>> reduce(Stream<KeyValue<String, Integer>> stream) {
                     HashMap<String, Integer> map = new HashMap<>();
 
-                    //todo copy 学生实现 定义reducetask处理数据的规则 也就是Reduce的处理逻辑
+                    //todo finish 学生实现 定义reducetask处理数据的规则 也就是Reduce的处理逻辑
                     stream.forEach(e -> {
                         String key = e.getKey();
                         Integer value = e.getValue();
@@ -108,7 +109,22 @@ public class WordCountDriver {
                         }
                     });
 
-                    return map.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue()));
+                    int topN = 3;
+                    List<Map.Entry<String, Integer>> urlCountKVList = map.entrySet().stream()
+                            .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                            .limit(topN)
+                            .collect(Collectors.toList());
+
+                    int lastTopNValue;
+                    if(urlCountKVList.size()<topN) {
+                        lastTopNValue = urlCountKVList.get(urlCountKVList.size() - 1).getValue();
+                    }else{
+                        lastTopNValue = urlCountKVList.get(topN-1).getValue();
+                    }
+
+                    return map.entrySet().stream()
+                            .filter(e -> e.getValue() >= lastTopNValue)
+                            .map(e -> new KeyValue(e.getKey(), e.getValue()));
                 }
             };
             PartionWriter partionWriter = fileFormat.createWriter(outputPath, i);
