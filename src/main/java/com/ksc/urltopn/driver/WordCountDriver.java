@@ -12,7 +12,13 @@ import com.ksc.urltopn.task.map.MapFunction;
 import com.ksc.urltopn.task.map.MapTaskContext;
 import com.ksc.urltopn.task.reduce.ReduceFunction;
 import com.ksc.urltopn.task.reduce.ReduceTaskContext;
+import com.ksc.urltopn.thriftService.UrlTopNServiceImp;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.server.TServer;
+import org.apache.thrift.server.TSimpleServer;
+import org.apache.thrift.transport.TServerSocket;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,15 +29,40 @@ import java.util.stream.Stream;
 
 public class WordCountDriver {
 
-    public static void main(String[] args) {
-        DriverEnv.host = "127.0.0.1";
-        DriverEnv.port = 4040;
-//        String inputPath = "/tmp/input";
+    public static String ip;
+    public static int akkaPort;
+    public static int thriftPort;
+    public static String memory; // 不知道在哪用
+
+    private static void readConf() throws IOException {
+        String filePath = "./bin/master.conf";
+        BufferedReader br = new BufferedReader(new FileReader(filePath));
+        String line;
+        br.readLine(); //把注释读完
+        line = br.readLine();
+        String[] parts = line.split("\\s+");
+        ip = parts[0];
+        akkaPort = Integer.parseInt(parts[1]);
+        thriftPort = Integer.parseInt(parts[2]);
+        memory = parts[3];
+
+        System.out.println("读取配置...");
+        // 使用读取的数据进行操作，例如打印或者传递给启动代码
+        System.out.println("IP: " + ip);
+        System.out.println("Akka Port: " + akkaPort);
+        System.out.println("Thrift Port: " + thriftPort);
+        System.out.println("Memory: " + memory);
+    }
+
+    public static void main(String[] args) throws IOException {
+        readConf();
+        DriverEnv.host = ip;
+        DriverEnv.port = akkaPort;
         String inputPath = "E:/MapReduce/input";
-//        String outputPath = "/tmp/output";
         String outputPath = "E:/MapReduce/output";
+
         String applicationId = "wordcount_001";
-        int reduceTaskNum = 2;
+        int reduceTaskNum = 3;
 
         FileFormat fileFormat = new UnsplitFileFormat();
         PartionFile[] partionFiles = fileFormat.getSplits(inputPath, 1000);
@@ -43,6 +74,9 @@ public class WordCountDriver {
         System.out.println("ServerActor started at: " + driverActorRef.path().toString());
 
 
+        /**
+         * map任务的stageId为0
+         */
         int mapStageId = 0;
         //添加stageId和任务的映射
         taskScheduler.registerBlockingQueue(mapStageId, new LinkedBlockingQueue());
@@ -61,7 +95,6 @@ public class WordCountDriver {
                                 List<String> matchedStrings = new ArrayList<>();
                                 while (matcher.find()) {
                                     String group = matcher.group();
-                                    System.out.println(group);
                                     matchedStrings.add(group);
                                 }
                                 return matchedStrings.stream()
@@ -80,6 +113,9 @@ public class WordCountDriver {
         DriverEnv.taskScheduler.waitStageFinish(mapStageId);
 
 
+        /**
+         * reduce任务的stageId为1
+         */
         int reduceStageId = 1;
         taskScheduler.registerBlockingQueue(reduceStageId, new LinkedBlockingQueue());
         for (int i = 0; i < reduceTaskNum; i++) {
@@ -101,6 +137,9 @@ public class WordCountDriver {
                         }
                     });
 
+                    /**
+                     * 自启动的TopN没传
+                     */
                     int topN = 3;
                     List<Map.Entry<String, Integer>> urlCountKVList = map.entrySet().stream()
                             .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
@@ -129,13 +168,32 @@ public class WordCountDriver {
 
         DriverEnv.taskScheduler.submitTask(reduceStageId);
         DriverEnv.taskScheduler.waitStageFinish(reduceStageId);
-        System.out.println("job finished");
 
         /**
-         * 开启RPC服务
+         * merge任务的stageId为2
          */
+        int mergeStageId = 2;
+        taskScheduler.registerBlockingQueue(mergeStageId, new LinkedBlockingQueue());
+        PartionWriter partionWriter = fileFormat.createWriter(outputPath, 0);
+        ReduceTaskContext reduceTaskContext = new ReduceTaskContext(applicationId, "stage_" + mergeStageId, taskScheduler.generateTaskId(), 0, new ShuffleBlockId[]{null}, new ReduceFunction() {
+            @Override
+            public Stream<KeyValue> reduce(Stream stream) {
+                return null;
+            }
+        }, partionWriter);
+        taskScheduler.addTaskContext(mergeStageId, reduceTaskContext);
+
+        DriverEnv.taskScheduler.submitTask(mergeStageId);
+        DriverEnv.taskScheduler.waitStageFinish(mergeStageId);
+
+        System.out.println("job finished");
+
+
+//        /**
+//         * 开启RPC服务
+//         */
 //        try {
-//            TServerSocket tServerSocket = new TServerSocket(9090);
+//            TServerSocket tServerSocket = new TServerSocket(thriftPort);
 //            TBinaryProtocol.Factory factory = new TBinaryProtocol.Factory();
 //            TSimpleServer.Args tArgs = new TSimpleServer.Args(tServerSocket);
 //            tArgs.inputProtocolFactory(factory);
@@ -146,7 +204,7 @@ public class WordCountDriver {
 //            TServer tServer = new TSimpleServer(tArgs);
 //            System.out.println("Starting the simple server...");
 //            tServer.serve();
-//        }catch (Exception e){
+//        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
 
