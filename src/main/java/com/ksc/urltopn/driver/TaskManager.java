@@ -17,12 +17,12 @@ public class TaskManager {
     /**
      * stageId和task队列的映射
      */
-    private Map<Integer,BlockingQueue<TaskContext>> stageIdToBlockingQueueMap = new HashMap<>();
+    public Map<Integer,BlockingQueue<TaskContext>> stageIdToBlockingQueueMap = new HashMap<>();
 
     /**
      * stageId和taskId的映射
      */
-    private Map<Integer, List<Integer>> stageMap = new HashMap<>();
+    public Map<Integer, List<Integer>> stageMap = new HashMap<>();
 
     /**
      * taskId和task状态的映射

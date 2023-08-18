@@ -3,6 +3,7 @@ package com.ksc.urltopn.driver;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import com.ksc.urltopn.UrlTopNService;
 import com.ksc.urltopn.datasourceapi.*;
 import com.ksc.urltopn.rpc.Driver.DriverActor;
 import com.ksc.urltopn.rpc.Driver.DriverSystem;
@@ -11,12 +12,14 @@ import com.ksc.urltopn.task.*;
 import com.ksc.urltopn.task.map.MapFunction;
 import com.ksc.urltopn.task.map.MapTaskContext;
 import com.ksc.urltopn.task.reduce.ReduceFunction;
+import com.ksc.urltopn.task.reduce.ReduceStatus;
 import com.ksc.urltopn.task.reduce.ReduceTaskContext;
 import com.ksc.urltopn.thriftService.UrlTopNServiceImp;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TSimpleServer;
 import org.apache.thrift.transport.TServerSocket;
+import org.checkerframework.checker.units.qual.K;
 
 import java.io.*;
 import java.util.*;
@@ -46,7 +49,7 @@ public class WordCountDriver {
         thriftPort = Integer.parseInt(parts[2]);
         memory = parts[3];
 
-        System.out.println("读取配置...");
+        System.out.println("读取master.conf配置...");
         // 使用读取的数据进行操作，例如打印或者传递给启动代码
         System.out.println("IP: " + ip);
         System.out.println("Akka Port: " + akkaPort);
@@ -58,14 +61,8 @@ public class WordCountDriver {
         readConf();
         DriverEnv.host = ip;
         DriverEnv.port = akkaPort;
-        String inputPath = "E:/MapReduce/input";
-        String outputPath = "E:/MapReduce/output";
-
-        String applicationId = "wordcount_001";
-        int reduceTaskNum = 3;
-
-        FileFormat fileFormat = new UnsplitFileFormat();
-        PartionFile[] partionFiles = fileFormat.getSplits(inputPath, 1000);
+        String inputPath = "E:/MapReduce/1input";
+        String outputPath = "E:/MapReduce/1output";
 
         TaskManager taskScheduler = DriverEnv.taskManager;
 
@@ -74,11 +71,19 @@ public class WordCountDriver {
         System.out.println("ServerActor started at: " + driverActorRef.path().toString());
 
 
+
+        int topN = 3;
+        String applicationId = "application_001";
+
         /**
          * map任务的stageId为0
          */
         int mapStageId = 0;
         //添加stageId和任务的映射
+        int reduceTaskNum = 3;
+        FileFormat fileFormat = new UnsplitFileFormat();
+        PartionFile[] partionFiles = fileFormat.getSplits(inputPath, 1000);
+
         taskScheduler.registerBlockingQueue(mapStageId, new LinkedBlockingQueue());
         for (PartionFile partionFile : partionFiles) {
             MapFunction wordCountMapFunction = new MapFunction<String, KeyValue>() {
@@ -87,9 +92,7 @@ public class WordCountDriver {
                 public Stream<KeyValue> map(Stream<String> stream) {
                     String regex = "http://[^\\s\"\\n]*";
                     Pattern pattern = Pattern.compile(regex);
-                    AtomicInteger n = new AtomicInteger();
                     return stream.flatMap(line -> {
-                                n.getAndIncrement();
                                 // 已修正 只读取url
                                 Matcher matcher = pattern.matcher(line);
                                 List<String> matchedStrings = new ArrayList<>();
@@ -140,7 +143,6 @@ public class WordCountDriver {
                     /**
                      * 自启动的TopN没传
                      */
-                    int topN = 3;
                     List<Map.Entry<String, Integer>> urlCountKVList = map.entrySet().stream()
                             .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
                             .limit(topN)
@@ -174,39 +176,75 @@ public class WordCountDriver {
          */
         int mergeStageId = 2;
         taskScheduler.registerBlockingQueue(mergeStageId, new LinkedBlockingQueue());
-        PartionWriter partionWriter = fileFormat.createWriter(outputPath, 0);
+        PartionWriter mergePartitionWriter = fileFormat.createWriter(outputPath, 0);
         ReduceTaskContext reduceTaskContext = new ReduceTaskContext(applicationId, "stage_" + mergeStageId, taskScheduler.generateTaskId(), 0, new ShuffleBlockId[]{null}, new ReduceFunction() {
             @Override
-            public Stream<KeyValue> reduce(Stream stream) {
-                return null;
+            public Stream<KeyValue> reduce(Stream stream) throws IOException {
+                Map<String,Integer> map= new HashMap<>();
+                stream.forEach(line -> {
+                    String lineStr = (String) line;
+                    String[] split = lineStr.split("\\s+");
+                    if (split.length == 2) {
+                        Integer count = Integer.valueOf(split[1]);
+                        map.put(split[0], count);
+                    }
+                });
+
+                List<Map.Entry<String, Integer>> urlCountKVList = map.entrySet().stream()
+                        .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                        .limit(topN)
+                        .collect(Collectors.toList());
+
+                int lastTopNValue;
+
+                if (urlCountKVList.size() < topN) {
+                    lastTopNValue = urlCountKVList.get(urlCountKVList.size() - 1).getValue();
+                } else {
+                    lastTopNValue = urlCountKVList.get(topN - 1).getValue();
+                }
+
+                return map.entrySet().stream()
+                        .filter(e -> e.getValue() >= lastTopNValue)
+                        .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                        .map(e -> {
+                            return new KeyValue(e.getKey(), e.getValue());
+                        });
             }
-        }, partionWriter);
+        }, mergePartitionWriter);
+
         taskScheduler.addTaskContext(mergeStageId, reduceTaskContext);
 
         DriverEnv.taskScheduler.submitTask(mergeStageId);
         DriverEnv.taskScheduler.waitStageFinish(mergeStageId);
 
+        DriverEnv.taskManager.stageIdToBlockingQueueMap.remove(mapStageId);
+        DriverEnv.taskManager.stageIdToBlockingQueueMap.remove(reduceStageId);
+        DriverEnv.taskManager.stageIdToBlockingQueueMap.remove(mergeStageId);
+        DriverEnv.taskManager.stageMap.remove(mapStageId);
+        DriverEnv.taskManager.stageMap.remove(reduceStageId);
+        DriverEnv.taskManager.stageMap.remove(mergeStageId);
+
         System.out.println("job finished");
 
 
-//        /**
-//         * 开启RPC服务
-//         */
-//        try {
-//            TServerSocket tServerSocket = new TServerSocket(thriftPort);
-//            TBinaryProtocol.Factory factory = new TBinaryProtocol.Factory();
-//            TSimpleServer.Args tArgs = new TSimpleServer.Args(tServerSocket);
-//            tArgs.inputProtocolFactory(factory);
-//            tArgs.outputProtocolFactory(factory);
-//
-//            UrlTopNServiceImp urlTopNServiceImp = new UrlTopNServiceImp(outputPath);
-//            tArgs.processor(new com.ksc.urltopn.thrift.UrlTopNService.Processor<>(urlTopNServiceImp));
-//            TServer tServer = new TSimpleServer(tArgs);
-//            System.out.println("Starting the simple server...");
-//            tServer.serve();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        /**
+         * 开启thrift RPC服务
+         */
+        try {
+            TServerSocket tServerSocket = new TServerSocket(thriftPort);
+            TBinaryProtocol.Factory factory = new TBinaryProtocol.Factory();
+            TSimpleServer.Args tArgs = new TSimpleServer.Args(tServerSocket);
+            tArgs.inputProtocolFactory(factory);
+            tArgs.outputProtocolFactory(factory);
+
+            UrlTopNServiceImp urlTopNServiceImp = new UrlTopNServiceImp();
+            tArgs.processor(new UrlTopNService.Processor<UrlTopNService.Iface>(urlTopNServiceImp));
+            TServer tServer = new TSimpleServer(tArgs);
+            System.out.println("Starting the simple server...");
+            tServer.serve();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 }

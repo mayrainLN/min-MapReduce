@@ -1,5 +1,6 @@
 package com.ksc.urltopn.task.reduce;
 
+import com.ksc.urltopn.conf.AppConfig;
 import com.ksc.urltopn.datasourceapi.PartionWriter;
 import com.ksc.urltopn.shuffle.ShuffleBlockId;
 import com.ksc.urltopn.shuffle.nettyimpl.client.ShuffleClient;
@@ -8,10 +9,8 @@ import com.ksc.urltopn.task.Task;
 import com.ksc.urltopn.task.TaskStatusEnum;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 public class ReduceTask extends Task {
@@ -36,73 +35,36 @@ public class ReduceTask extends Task {
         // reduce任务
         if (stageId.equals("stage_1")) {
             Stream<KeyValue> stream = Stream.empty();
+            // 读取shuffle文件
             for (ShuffleBlockId shuffleBlockId : shuffleBlockId) {
                 stream = Stream.concat(stream, new ShuffleClient().fetchShuffleData(shuffleBlockId));
             }
+            // reduce计算结果
             Stream reduceStream = reduceFunction.reduce(stream);
-            partionWriter.write(reduceStream);
+
+            // 写入到output文件
+            partionWriter.writeReduce(reduceStream, applicationId);
 
             return new ReduceStatus(super.taskId, TaskStatusEnum.FINISHED);
         }
 
-        if(stageId.equals("stage_2")){
-            return merge(3,"E:/MapReduce/output");
+        if (stageId.equals("stage_2")) {
+            Stream<String> allStream = Stream.empty();
+            File file = new File(AppConfig.shuffleTempDir + "/" + applicationId + "/midFile");
+            File[] reduceResultFiles = file.listFiles();
+
+            for (File midFile : reduceResultFiles) {
+                Stream<String> stream = Files.lines(Paths.get(midFile.getAbsolutePath()));
+                allStream = Stream.concat(allStream, stream);
+            }
+            // reduce计算结果
+            Stream<KeyValue> mergeStream = reduceFunction.reduce(allStream);
+
+            partionWriter.writeMerge(mergeStream, applicationId);
+
+            return new ReduceStatus(super.taskId, TaskStatusEnum.FINISHED);
         }
 
         return new ReduceStatus(super.taskId, TaskStatusEnum.FAILED);
-    }
-
-    public ReduceStatus merge(int topN, String outputPath) throws IOException {
-        // 先写死
-        // merge阶段
-        File parent = new File(outputPath);
-        File[] reduceResultFiles = parent.listFiles();
-
-        Map<String, Integer> map = new HashMap();
-        for (File reduceResultFile : reduceResultFiles) {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(reduceResultFile));
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                String[] split = line.split("\\s+");
-                if (split.length != 2) {
-                    continue;
-                }
-                Integer count = Integer.valueOf(split[1]);
-                map.put(split[0], count);
-            }
-            reduceResultFile.delete();
-        }
-
-        List<Map.Entry<String, Integer>> urlCountKVList = map.entrySet().stream()
-                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-                .limit(topN)
-                .collect(Collectors.toList());
-
-        int lastTopNValue;
-        if (urlCountKVList.isEmpty()) {
-            return new ReduceStatus(super.taskId, TaskStatusEnum.FINISHED);
-        }
-        if (urlCountKVList.size() < topN) {
-            lastTopNValue = urlCountKVList.get(urlCountKVList.size() - 1).getValue();
-        } else {
-            lastTopNValue = urlCountKVList.get(topN - 1).getValue();
-        }
-
-        File outputFile = new File(outputPath + "/mergeResult.txt");
-        BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
-
-        map.entrySet().stream()
-                .filter(e -> e.getValue() >= lastTopNValue)
-                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-                .forEach(e -> {
-                    try {
-                        writer.write(e.getKey() + " " + e.getValue() + "\n");
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                });
-
-        writer.close();
-        return new ReduceStatus(super.taskId, TaskStatusEnum.FINISHED);
     }
 }
