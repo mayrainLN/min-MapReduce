@@ -33,7 +33,7 @@ public class TextPartionWriter implements PartionWriter<KeyValue>, Serializable 
     //todo finish 学生实现 将reducetask的计算结果写入结果文件中
     @Override
     public void writeReduce(Stream<KeyValue> stream, String applicationId) throws IOException {
-        File file = new File(destDest + File.separator + "part_" + padLeft(partionId, 3) + ".txt");
+//        File file = new File(destDest + File.separator + "part_" + padLeft(partionId, 3) + ".txt");
 
         // 写到中间文件
         String midFileId = UUID.randomUUID().toString();
@@ -43,21 +43,21 @@ public class TextPartionWriter implements PartionWriter<KeyValue>, Serializable 
         }
         FileOutputStream midFileOs = new FileOutputStream(midFile);
 
-        if(!file.getParentFile().exists()){
-            FileUtils.forceMkdir(file.getParentFile());
-        }
-        try (FileOutputStream fos = new FileOutputStream(file)) {
+//        if(!file.getParentFile().exists()){
+//            FileUtils.forceMkdir(file.getParentFile());
+//        }
+//        try (FileOutputStream fos = new FileOutputStream(file)) {
             stream.forEach(keyValue -> {
                 try {
                     System.out.println("reduce时写："+keyValue.getKey() + ":" + keyValue.getValue());
-                    fos.write((keyValue.getKey() + "\t" + keyValue.getValue() + "\n").getBytes("utf-8"));
+//                    fos.write((keyValue.getKey() + "\t" + keyValue.getValue() + "\n").getBytes("utf-8"));
                     midFileOs.write((keyValue.getKey() + "\t" + keyValue.getValue() + "\n").getBytes("utf-8"));
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             });
-        }
+//        }
 
         midFileOs.close();
     }

@@ -71,6 +71,7 @@ public class TaskScheduler {
     public void updateTaskStatus(TaskStatus taskStatus){
         if(taskStatus.getTaskStatus().equals(TaskStatusEnum.FINISHED)||taskStatus.getTaskStatus().equals(TaskStatusEnum.FAILED)){
             String executorUrl=taskExecuotrMap.get(taskStatus.getTaskId());
+            // 某个任务完成了，给对应的executor增加一个可用的core
             executorManager.updateExecutorAvailableCores(executorUrl,1);
         }
     }

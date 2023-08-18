@@ -3,6 +3,7 @@ package com.ksc.urltopn.driver;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import com.ksc.urltopn.ApplicationResultDB;
 import com.ksc.urltopn.UrlTopNService;
 import com.ksc.urltopn.datasourceapi.*;
 import com.ksc.urltopn.rpc.Driver.DriverActor;
@@ -64,6 +65,7 @@ public class WordCountDriver {
         String inputPath = "E:/MapReduce/1input";
         String outputPath = "E:/MapReduce/1output";
 
+
         TaskManager taskScheduler = DriverEnv.taskManager;
 
         ActorSystem executorSystem = DriverSystem.getExecutorSystem();
@@ -74,6 +76,8 @@ public class WordCountDriver {
 
         int topN = 3;
         String applicationId = "application_001";
+
+        ApplicationResultDB.addOutputPath(applicationId, outputPath);
 
         /**
          * map任务的stageId为0
