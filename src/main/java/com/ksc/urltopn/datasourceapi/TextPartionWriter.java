@@ -49,7 +49,6 @@ public class TextPartionWriter implements PartionWriter<KeyValue>, Serializable 
 //        try (FileOutputStream fos = new FileOutputStream(file)) {
             stream.forEach(keyValue -> {
                 try {
-                    System.out.println("reduce时写："+keyValue.getKey() + ":" + keyValue.getValue());
 //                    fos.write((keyValue.getKey() + "\t" + keyValue.getValue() + "\n").getBytes("utf-8"));
                     midFileOs.write((keyValue.getKey() + "\t" + keyValue.getValue() + "\n").getBytes("utf-8"));
 

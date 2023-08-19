@@ -14,13 +14,15 @@ public class Executor {
 
     public static void main(String[] args) throws InterruptedException {
 
-        ExecutorEnv.host="127.0.0.1";
-        ExecutorEnv.port=15050;
-        ExecutorEnv.memory="512m";
-        ExecutorEnv.driverUrl="akka.tcp://DriverSystem@127.0.0.1:4040/user/driverActor";
-        ExecutorEnv.core=2;
+        String masterUrl = System.getProperty("masterHost")+":"+System.getProperty("masterPort");
+        ExecutorEnv.driverUrl="akka.tcp://DriverSystem@"+masterUrl+"/user/driverActor";
+
+        ExecutorEnv.core=Integer.parseInt(System.getProperty("core"));
+        ExecutorEnv.host = System.getProperty("host");
+        ExecutorEnv.port = Integer.parseInt(System.getProperty("port")); // akka
+        ExecutorEnv.memory = System.getProperty("memory");
         ExecutorEnv.executorUrl="akka.tcp://ExecutorSystem@"+ ExecutorEnv.host+":"+ExecutorEnv.port+"/user/executorActor";
-        ExecutorEnv.shufflePort=7337;
+        ExecutorEnv.shufflePort=Integer.parseInt(System.getProperty("nettyPort"));
 
         new Thread(() -> {
             try {

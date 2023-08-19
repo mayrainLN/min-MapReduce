@@ -39,7 +39,8 @@ public class WordCountDriver {
     public static String memory; // 不知道在哪用
 
     private static void readConf() throws IOException {
-        String filePath = "./bin/master.conf";
+//        String masterPath = System.getProperty("master.conf.path");
+        String filePath = "./master.conf";
         BufferedReader br = new BufferedReader(new FileReader(filePath));
         String line;
         br.readLine(); //把注释读完
