@@ -17,7 +17,7 @@ import org.apache.thrift.transport.TServerSocket;
 
 import java.io.*;
 
-public class WordCountDriver {
+public class UrlTopNDriver {
 
     public static String ip;
     public static int akkaPort;

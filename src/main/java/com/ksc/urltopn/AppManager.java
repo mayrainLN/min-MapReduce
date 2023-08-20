@@ -3,7 +3,7 @@ package com.ksc.urltopn;
 import com.ksc.urltopn.datasourceapi.FileFormat;
 import com.ksc.urltopn.datasourceapi.PartionFile;
 import com.ksc.urltopn.datasourceapi.PartionWriter;
-import com.ksc.urltopn.datasourceapi.UnsplitFileFormat;
+import com.ksc.urltopn.datasourceapi.SplitFileFormat;
 import com.ksc.urltopn.driver.DriverEnv;
 import com.ksc.urltopn.driver.TaskManager;
 import com.ksc.urltopn.shuffle.ShuffleBlockId;
@@ -61,7 +61,7 @@ public class AppManager {
         int topN;
         @Override
         public void run() {
-            FileFormat fileFormat = new UnsplitFileFormat();
+            FileFormat fileFormat = new SplitFileFormat();
             PartionFile[] partionFiles = fileFormat.getSplits(inputPath, splitSize);
 
             TaskManager taskScheduler = DriverEnv.taskManager;

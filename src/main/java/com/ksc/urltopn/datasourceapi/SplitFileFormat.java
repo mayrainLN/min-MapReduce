@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class UnsplitFileFormat implements FileFormat {
+public class SplitFileFormat implements FileFormat {
 
     @Override
     public boolean isSplitable(String filePath) {
