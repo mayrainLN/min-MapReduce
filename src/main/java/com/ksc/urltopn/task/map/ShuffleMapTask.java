@@ -5,6 +5,7 @@ import com.ksc.urltopn.datasourceapi.PartionReader;
 import com.ksc.urltopn.conf.AppConfig;
 import com.ksc.urltopn.shuffle.DirectShuffleWriter;
 import com.ksc.urltopn.task.Task;
+import com.ksc.urltopn.task.TaskStatus;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -26,7 +27,7 @@ public class ShuffleMapTask extends Task<MapStatus> {
     }
 
 
-    public MapStatus runTask() throws IOException {
+    public TaskStatus runTask() throws IOException {
         Stream<String> stream = partionReader.toStream(partiongFile);
 
 
@@ -35,8 +36,9 @@ public class ShuffleMapTask extends Task<MapStatus> {
         Stream kvStream = mapFunction.map(stream);
 
         String shuffleId= UUID.randomUUID().toString();
-        //将task执行结果写入shuffle文件中
+        // 多少个reduce就生成多少个shuffle文件。
         DirectShuffleWriter shuffleWriter = new DirectShuffleWriter(AppConfig.shuffleTempDir, shuffleId,applicationId, partionId, reduceTaskNum);
+        //将task执行结果写入shuffle文件中
         shuffleWriter.write(kvStream);
         shuffleWriter.commit();
         return shuffleWriter.getMapStatus(taskId);

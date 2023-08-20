@@ -1,5 +1,6 @@
 package com.ksc.urltopn.shuffle;
 
+import com.ksc.urltopn.task.TaskStatus;
 import com.ksc.urltopn.task.map.MapStatus;
 
 import java.io.IOException;
@@ -11,6 +12,6 @@ public  interface ShuffleWriter<KeyValue> {
 
     void commit();
 
-    MapStatus getMapStatus(int mapTaskId);
+    TaskStatus getMapStatus(int mapTaskId);
 
 }

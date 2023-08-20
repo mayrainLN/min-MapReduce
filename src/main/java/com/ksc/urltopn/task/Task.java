@@ -21,9 +21,13 @@ public abstract class Task<T>  implements Runnable {
 
     public void run() {
         try{
+            // 向Driver更新task的状态
             ExecutorRpc.updateTaskMapStatue(new TaskStatus(taskId,TaskStatusEnum.RUNNING));
-            TaskStatus taskStatus = runTask();
-            ExecutorRpc.updateTaskMapStatue(taskStatus);
+            TaskStatus taskStatus = runTask();// 运行实际工作
+            // 更新task的执行结果。其中还会补充Excutor的Url和Port。方便后续流程其他节点请求本节点的shuffle结果
+            if (taskStatus!=null){
+                ExecutorRpc.updateTaskMapStatue(taskStatus);
+            }
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);

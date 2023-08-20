@@ -11,6 +11,7 @@ public class DriverActor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
+                // 收到Executor发起的更新task状态请求
                 .match(TaskStatus.class, mapStatus -> {
                     System.out.println("ExecutorActor received mapStatus:"+mapStatus);
                     if(mapStatus.getTaskStatus() == TaskStatusEnum.FAILED) {

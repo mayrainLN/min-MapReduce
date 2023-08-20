@@ -1,7 +1,9 @@
 package com.ksc.urltopn.shuffle;
 
 import com.ksc.urltopn.task.KeyValue;
+import com.ksc.urltopn.task.TaskStatus;
 import com.ksc.urltopn.task.map.MapStatus;
+import com.ksc.urltopn.task.reduce.ReduceStatus;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -27,6 +29,7 @@ public class DirectShuffleWriter implements ShuffleWriter<KeyValue> {
         shuffleBlockIds = new ShuffleBlockId[reduceTaskNum];
         for (int i = 0; i < reduceTaskNum; i++) {
             try {
+                // 生成Map后获得的shuffle文件的元信息
                 shuffleBlockIds[i]=new ShuffleBlockId(baseDir,applicationId,shuffleId,mapId,i);
                 new File(shuffleBlockIds[i].getShuffleParentPath()).mkdirs();
                 fileWriters[i] = new ObjectOutputStream(new FileOutputStream(shuffleBlockIds[i].getShufflePath()));
@@ -42,6 +45,8 @@ public class DirectShuffleWriter implements ShuffleWriter<KeyValue> {
         Iterator<KeyValue> iterator = entryStream.iterator();
         while (iterator.hasNext()) {
             KeyValue next = iterator.next();
+            System.out.println("写入KV到shuffle:"+next.getKey() + " " + next.getValue());
+            // 通过hash来保证同一个key写入同一个shuffle文件中
             fileWriters[Math.abs(next.getKey().hashCode()) % reduceTaskNum].writeObject(next);
         }
     }
@@ -57,9 +62,12 @@ public class DirectShuffleWriter implements ShuffleWriter<KeyValue> {
         }
     }
 
-    public  MapStatus getMapStatus(int mapTaskId) {
+    public MapStatus getMapStatus(int mapTaskId) {
         return new MapStatus(mapTaskId,shuffleBlockIds);
     }
 
+    public ReduceStatus getReduceStatus(int mapTaskId) {
+        return new ReduceStatus(mapTaskId,shuffleBlockIds);
+    }
 
 }

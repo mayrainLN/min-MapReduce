@@ -11,7 +11,7 @@ import java.util.concurrent.BlockingQueue;
 
 public class TaskScheduler {
 
-    private TaskManager taskManager;
+    public TaskManager taskManager;
     private ExecutorManager executorManager ;
 
     /**

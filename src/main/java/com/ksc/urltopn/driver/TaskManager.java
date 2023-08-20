@@ -5,6 +5,8 @@ import com.ksc.urltopn.task.map.MapStatus;
 import com.ksc.urltopn.task.TaskContext;
 import com.ksc.urltopn.task.TaskStatus;
 import com.ksc.urltopn.task.TaskStatusEnum;
+import com.ksc.urltopn.task.merge.MergeStatus;
+import com.ksc.urltopn.task.reduce.ReduceStatus;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +29,7 @@ public class TaskManager {
     /**
      * taskId和task状态的映射
      */
-    Map<Integer, TaskStatus> taskStatusMap = new HashMap<>();
+    public Map<Integer, TaskStatus> taskStatusMap = new HashMap<>();
 
 
     public BlockingQueue<TaskContext> getBlockingQueue(int stageId) {
@@ -77,6 +79,17 @@ public class TaskManager {
         }
         return shuffleBlockIds.toArray(new ShuffleBlockId[shuffleBlockIds.size()]);
     }
+
+    public ShuffleBlockId[] getAllReduceShuffle(int stageId){
+        List<ShuffleBlockId> shuffleBlockIds = new ArrayList<>();
+        for(int taskId:stageMap.get(stageId)){
+            for (ShuffleBlockId shuffleBlockId : ((ReduceStatus) taskStatusMap.get(taskId)).getShuffleBlockIds()) {
+                shuffleBlockIds.add(shuffleBlockId);
+            }
+        }
+        return shuffleBlockIds.toArray(new ShuffleBlockId[shuffleBlockIds.size()]);
+    }
+
 
     public void updateTaskStatus(TaskStatus taskStatus) {
         taskStatusMap.put(taskStatus.getTaskId(),taskStatus);
