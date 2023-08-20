@@ -66,7 +66,7 @@ public class UrlTopNDriver {
             int reduceTaskNum = Integer.parseInt(parts[4]);
             int splitSize = Integer.parseInt(parts[5]);
             ApplicationResultDB.setStatus(appId, AppStatusEnum.ACCEPT);
-            ApplicationResultDB.addOutputPath(appId, outputDir);
+            ApplicationResultDB.addOutputPath(appId, outputDir + "/" + appId + ".txt");
             AppManager.submitApplication(inputDir, outputDir,appId, reduceTaskNum, splitSize,topN);
             System.out.println("提交测试用例:");
             System.out.println(appId+ " 输入路径" + inputDir+" 输出路径：" + outputDir+" topN" + topN+ " reduceTaskNum" + reduceTaskNum+ " splitSize" + splitSize);

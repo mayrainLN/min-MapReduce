@@ -19,24 +19,24 @@ public class UrlTopNServiceImp implements UrlTopNService.Iface, Serializable {
 
     @Override
     public List<UrlTopNResult> getTopNAppResult(String applicationId) throws TException {
-        if(ApplicationResultDB.getResult(applicationId) == null){
+        System.out.println("applicationId结果: " + ApplicationResultDB.getResult(applicationId).toString());
+        if (ApplicationResultDB.getResult(applicationId) == null) {
             List<UrlTopNResult> urlTopNResults = new ArrayList<>();
             String outputPath = ApplicationResultDB.getOutputPath(applicationId);
-            for (File file : new File(outputPath).listFiles()) {
-                try(BufferedReader bufferedReader = new BufferedReader(new FileReader(file))){
-                    String line;
-                    while((line = bufferedReader.readLine()) != null){
-                        String[] split = line.split("\\s+");
-                        if(split.length == 2){
-                            urlTopNResults.add(new UrlTopNResult(split[0], Integer.valueOf(split[1])));
-                        }
+            System.out.println("outputPath = " + outputPath);
+            try (BufferedReader bufferedReader = new BufferedReader(new FileReader(outputPath))) {
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    String[] split = line.split("\\s+");
+                    if (split.length == 2) {
+                        urlTopNResults.add(new UrlTopNResult(split[0], Integer.valueOf(split[1])));
                     }
-
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
             ApplicationResultDB.setResult(applicationId, urlTopNResults);
             return urlTopNResults;
@@ -54,7 +54,7 @@ public class UrlTopNServiceImp implements UrlTopNService.Iface, Serializable {
         int topN = urlTopNAppRequest.getTopN();
 
         ApplicationResultDB.setStatus(applicationId, AppStatusEnum.ACCEPT);
-        ApplicationResultDB.addOutputPath(applicationId, outputPath);
+        ApplicationResultDB.addOutputPath(applicationId, outputPath + "/" + applicationId + ".txt");
         AppManager.submitApplication(inputPath, outputPath, applicationId, reduceTaskNum, splitSize, topN);
         //submitApp 直接返回，返回的是App的状态。
         return new UrlTopNAppResponse(applicationId, ApplicationResultDB.getStatus(applicationId).getCode());
@@ -62,6 +62,7 @@ public class UrlTopNServiceImp implements UrlTopNService.Iface, Serializable {
 
     @Override
     public UrlTopNAppResponse getAppStatus(String applicationId) throws TException {
+        System.out.println("获取statsu:applicationId = " + applicationId);
         return new UrlTopNAppResponse(applicationId, ApplicationResultDB.getStatus(applicationId).getCode());
     }
 }

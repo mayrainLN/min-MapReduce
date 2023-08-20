@@ -214,7 +214,7 @@ public class AppManager {
             List<UrlTopNResult> urlTopNResults = ((MergeStatus) taskStatus).geturlTopNResults();
 
             //写结果到output文件
-            try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputPath+"/result.txt"))) {
+            try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputPath+"/"+applicationId+".txt"))) {
                 for (UrlTopNResult urlTopNResult : urlTopNResults) {
                     bufferedWriter.write(urlTopNResult.getUrl() + "\t" + urlTopNResult.getCount());
                     bufferedWriter.newLine();
