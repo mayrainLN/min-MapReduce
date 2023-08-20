@@ -30,6 +30,10 @@ public class ApplicationResultDB {
         resultMap.put(applicationId, result);
     }
 
+    public static boolean isSubmit(String applicationId) {
+        return resultMap.containsKey(applicationId);
+    }
+
     public static List<UrlTopNResult> getResult(String applicationId) {
         return resultMap.get(applicationId);
     }

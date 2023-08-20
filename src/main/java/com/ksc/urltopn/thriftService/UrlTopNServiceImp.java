@@ -19,6 +19,7 @@ public class UrlTopNServiceImp implements UrlTopNService.Iface, Serializable {
 
     @Override
     public List<UrlTopNResult> getTopNAppResult(String applicationId) throws TException {
+        System.out.println(ApplicationResultDB.isSubmit(applicationId));
         System.out.println("applicationId结果: " + ApplicationResultDB.getResult(applicationId).toString());
         if (ApplicationResultDB.getResult(applicationId) == null) {
             List<UrlTopNResult> urlTopNResults = new ArrayList<>();

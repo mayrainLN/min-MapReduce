@@ -213,6 +213,10 @@ public class AppManager {
             TaskStatus taskStatus = DriverEnv.taskScheduler.taskManager.taskStatusMap.get(mergeTaskId);
             List<UrlTopNResult> urlTopNResults = ((MergeStatus) taskStatus).geturlTopNResults();
 
+            ApplicationResultDB.setResult(applicationId, urlTopNResults);
+            ApplicationResultDB.setStatus(applicationId, AppStatusEnum.FINISHED);
+            System.out.println("完成任务:" + applicationId);
+
             //写结果到output文件
             try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputPath+"/"+applicationId+".txt"))) {
                 for (UrlTopNResult urlTopNResult : urlTopNResults) {
@@ -230,8 +234,7 @@ public class AppManager {
             DriverEnv.taskManager.stageMap.remove(reduceStageId);
             DriverEnv.taskManager.stageMap.remove(mergeStageId);
 
-            System.out.println("完成任务:" + applicationId);
-            ApplicationResultDB.setStatus(applicationId, AppStatusEnum.FINISHED);
+
         }
     }
 }
