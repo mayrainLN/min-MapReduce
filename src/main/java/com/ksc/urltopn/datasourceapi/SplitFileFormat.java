@@ -61,9 +61,7 @@ public class SplitFileFormat implements FileFormat {
      * @return 切片数组
      */
     private FileSplit[] splitFile(File file, long size) {
-        size = 100;
         List<FileSplit> fileSplitList = new ArrayList<>();
-        AtomicInteger FileLineNum = new AtomicInteger(0);
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             long currStart = 0L;
