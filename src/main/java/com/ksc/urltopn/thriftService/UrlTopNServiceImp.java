@@ -1,6 +1,10 @@
 package com.ksc.urltopn.thriftService;
 
 import com.ksc.urltopn.*;
+import com.ksc.urltopn.thrift.UrlTopNAppRequest;
+import com.ksc.urltopn.thrift.UrlTopNAppResponse;
+import com.ksc.urltopn.thrift.UrlTopNResult;
+import com.ksc.urltopn.thrift.UrlTopNService;
 import org.apache.thrift.TException;
 
 import java.io.*;

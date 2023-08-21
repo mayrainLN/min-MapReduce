@@ -1,19 +1,13 @@
 package com.ksc.urltopn.task.merge;
 
-import com.ksc.urltopn.UrlTopNResult;
-import com.ksc.urltopn.conf.AppConfig;
+import com.ksc.urltopn.thrift.UrlTopNResult;
 import com.ksc.urltopn.datasourceapi.PartionWriter;
 import com.ksc.urltopn.shuffle.ShuffleBlockId;
 import com.ksc.urltopn.shuffle.nettyimpl.client.ShuffleClient;
 import com.ksc.urltopn.task.KeyValue;
 import com.ksc.urltopn.task.Task;
 import com.ksc.urltopn.task.TaskStatusEnum;
-import com.ksc.urltopn.task.reduce.ReduceFunction;
-import com.ksc.urltopn.task.reduce.ReduceStatus;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

@@ -16,7 +16,7 @@ import com.ksc.urltopn.task.merge.MergeStatus;
 import com.ksc.urltopn.task.merge.MergeTaskContext;
 import com.ksc.urltopn.task.reduce.ReduceFunction;
 import com.ksc.urltopn.task.reduce.ReduceTaskContext;
-import org.checkerframework.checker.units.qual.K;
+import com.ksc.urltopn.thrift.UrlTopNResult;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;

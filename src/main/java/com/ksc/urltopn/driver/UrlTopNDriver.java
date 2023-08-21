@@ -6,7 +6,7 @@ import akka.actor.Props;
 import com.ksc.urltopn.AppManager;
 import com.ksc.urltopn.AppStatusEnum;
 import com.ksc.urltopn.ApplicationResultDB;
-import com.ksc.urltopn.UrlTopNService;
+import com.ksc.urltopn.thrift.UrlTopNService;
 import com.ksc.urltopn.rpc.Driver.DriverActor;
 import com.ksc.urltopn.rpc.Driver.DriverSystem;
 import com.ksc.urltopn.thriftService.UrlTopNServiceImp;

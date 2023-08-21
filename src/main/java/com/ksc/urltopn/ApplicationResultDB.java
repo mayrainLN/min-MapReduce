@@ -1,6 +1,7 @@
 package com.ksc.urltopn;
 
-import java.io.File;
+import com.ksc.urltopn.thrift.UrlTopNResult;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

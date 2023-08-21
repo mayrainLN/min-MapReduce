@@ -1,7 +1,6 @@
 package com.ksc.urltopn.task.merge;
 
-import com.ksc.urltopn.UrlTopNResult;
-import com.ksc.urltopn.shuffle.ShuffleBlockId;
+import com.ksc.urltopn.thrift.UrlTopNResult;
 import com.ksc.urltopn.task.TaskStatus;
 import com.ksc.urltopn.task.TaskStatusEnum;
 
