@@ -216,6 +216,7 @@ public class AppManager {
             ApplicationResultDB.setResult(applicationId, urlTopNResults);
             ApplicationResultDB.setStatus(applicationId, AppStatusEnum.FINISHED);
             System.out.println("完成任务:" + applicationId);
+            ApplicationResultDB.addOutputPath(applicationId, outputPath+"/"+applicationId+".txt");
 
             //写结果到output文件
             try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputPath+"/"+applicationId+".txt"))) {
